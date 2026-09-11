@@ -1,0 +1,18 @@
+version: 2
+
+sources:
+  - name: curated
+
+    database: awsdatacatalog
+    schema: curated_zone
+
+    description: Curated S3 Parquet and Iceberg tables registered in the Glue Data Catalog and queried through Athena.
+
+    tables:
+      - name: customers
+      - name: products
+      - name: orders
+      - name: orderdetails
+      - name: payments
+      - name: ratings
+      - name: ratings_for_ml

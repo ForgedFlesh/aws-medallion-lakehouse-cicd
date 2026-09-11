@@ -1,0 +1,15 @@
+CREATE TABLE IF NOT EXISTS ${presentation_database_name}.ratings_for_ml
+WITH (
+    table_type = 'ICEBERG',
+    location = 's3://${data_lake_bucket_name}/presentation_zone/ratings_for_ml/',
+    is_external = false
+)
+AS
+SELECT *
+FROM ${curated_database_name}.ratings_for_ml
+WHERE 1 = 0;
+
+DELETE FROM ${presentation_database_name}.ratings_for_ml;
+
+INSERT INTO ${presentation_database_name}.ratings_for_ml
+SELECT * FROM ${curated_database_name}.ratings_for_ml;

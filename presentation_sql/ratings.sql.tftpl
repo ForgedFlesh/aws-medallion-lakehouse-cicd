@@ -1,0 +1,16 @@
+CREATE TABLE IF NOT EXISTS ${presentation_database_name}.ratings
+WITH (
+    table_type = 'ICEBERG',
+    location = 's3://${data_lake_bucket_name}/presentation_zone/ratings/',
+    is_external = false
+)
+AS
+SELECT customerNumber, productCode, productRating, ratingTimestamp, ingest_ts, processing_date
+FROM ${curated_database_name}.ratings
+WHERE 1 = 0;
+
+DELETE FROM ${presentation_database_name}.ratings;
+
+INSERT INTO ${presentation_database_name}.ratings
+SELECT customerNumber, productCode, productRating, ratingTimestamp, ingest_ts, processing_date
+FROM ${curated_database_name}.ratings;

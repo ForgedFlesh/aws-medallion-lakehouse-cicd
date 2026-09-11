@@ -1,0 +1,9 @@
+variable "project_name" { type = string }
+variable "namespace_name" { type = string }
+variable "workgroup_name" { type = string }
+variable "database_name" { type = string }
+variable "base_capacity" { type = number }
+variable "subnet_ids" { type = list(string) }
+variable "security_group_ids" { type = list(string) }
+variable "data_lake_bucket_arn" { type = string }
+variable "curated_database_name" { type = string }

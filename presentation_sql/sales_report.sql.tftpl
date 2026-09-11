@@ -1,0 +1,35 @@
+CREATE TABLE IF NOT EXISTS ${presentation_database_name}.sales_report
+WITH (
+    table_type = 'ICEBERG',
+    location = 's3://${data_lake_bucket_name}/presentation_zone/sales_report/',
+    is_external = false
+)
+AS
+SELECT
+    year(o.orderDate) AS sales_year,
+    month(o.orderDate) AS sales_month,
+    count(DISTINCT o.orderNumber) AS order_count,
+    sum(od.quantityOrdered * od.priceEach) AS gross_sales,
+    avg(od.quantityOrdered * od.priceEach) AS average_order_line_amount
+FROM ${curated_database_name}.orders o
+JOIN ${curated_database_name}.orderdetails od
+  ON o.orderNumber = od.orderNumber
+ AND o.processing_date = od.processing_date
+WHERE 1 = 0
+GROUP BY 1, 2;
+
+DELETE FROM ${presentation_database_name}.sales_report;
+
+INSERT INTO ${presentation_database_name}.sales_report
+SELECT
+    year(o.orderDate) AS sales_year,
+    month(o.orderDate) AS sales_month,
+    count(DISTINCT o.orderNumber) AS order_count,
+    sum(od.quantityOrdered * od.priceEach) AS gross_sales,
+    avg(od.quantityOrdered * od.priceEach) AS average_order_line_amount
+FROM ${curated_database_name}.orders o
+JOIN ${curated_database_name}.orderdetails od
+  ON o.orderNumber = od.orderNumber
+ AND o.processing_date = od.processing_date
+WHERE o.processing_date = (SELECT max(processing_date) FROM ${curated_database_name}.orders)
+GROUP BY 1, 2;

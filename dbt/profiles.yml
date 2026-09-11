@@ -1,0 +1,26 @@
+medallion_lakehouse:
+  target: prod
+
+  outputs:
+    prod:
+      type: athena
+
+      database: awsdatacatalog
+      schema: presentation_zone
+
+      region_name: "{{ env_var('AWS_DEFAULT_REGION', 'us-east-1') }}"
+
+      work_group: "{{ env_var(
+        'ATHENA_WORKGROUP',
+        'medallion-lakehouse-workgroup'
+      ) }}"
+
+      s3_staging_dir: "s3://{{ env_var('SCRIPTS_BUCKET') }}/athena_results/dbt/"
+
+      s3_data_dir: "s3://{{ env_var('DATA_LAKE_BUCKET') }}/presentation_zone/dbt/"
+
+      s3_data_naming: schema_table_unique
+
+      threads: 4
+      poll_interval: 1
+      num_retries: 3

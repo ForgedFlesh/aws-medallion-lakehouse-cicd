@@ -1,0 +1,28 @@
+aws_region  = "us-east-1"
+environment = "dev"
+
+# Must be globally unique
+data_lake_bucket_name = "replace-medallion-data-lake"
+scripts_bucket_name   = "replace-medallion-glue-scripts"
+
+# Existing source bucket and RDS database
+source_data_bucket_name = "replace-source-bucket"
+ratings_source_prefix    = "ratings/"
+jdbc_connection_url      = "jdbc:mysql://replace-rds-endpoint:3306/classicmodels"
+rds_username             = "replace_me"
+rds_password             = "replace_me"
+
+glue_subnet_id          = "subnet-xxxxxxxx"
+glue_security_group_ids = ["sg-xxxxxxxx"]
+glue_availability_zone  = "us-east-1a"
+
+lakehouse_path = "s3://replace-medallion-data-lake/curated_zone"
+
+enable_redshift             = false
+redshift_subnet_ids          = ["subnet-xxxxxxxx", "subnet-yyyyyyyy"]
+redshift_security_group_ids  = ["sg-xxxxxxxx"]
+
+# Enable only after the runtime-created presentation.ratings_for_ml table exists.
+enable_downstream_access = false
+
+enable_event_trigger = false

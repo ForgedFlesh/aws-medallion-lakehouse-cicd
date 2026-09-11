@@ -1,0 +1,78 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - airflow-postgres:/var/lib/postgresql/data
+
+  airflow-init:
+    build:
+      context: ./airflow
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ./airflow/.env
+    environment: &airflow-common-env
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+      AIRFLOW__CORE__FERNET_KEY: ""
+      AIRFLOW_HOME: /opt/airflow
+      DBT_PROFILES_DIR: /opt/airflow/dbt
+    command: >
+      bash -lc "airflow db migrate &&
+      airflow users create --username admin --password admin
+      --firstname Neelabhra --lastname Sinha --role Admin
+      --email admin@example.com || true"
+    volumes: &airflow-common-volumes
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./dbt:/opt/airflow/dbt
+      - ./scripts:/opt/airflow/scripts:ro
+      - ./presentation_sql:/opt/airflow/presentation_sql:ro
+      - C:/Users/neela/.aws:/home/airflow/.aws:ro
+
+
+  airflow-webserver:
+    build:
+      context: ./airflow
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ./airflow/.env
+    environment: *airflow-common-env
+    command: airflow webserver
+    ports:
+      - "8080:8080"
+    volumes: *airflow-common-volumes
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  airflow-scheduler:
+    build:
+      context: ./airflow
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ./airflow/.env
+    environment: *airflow-common-env
+    command: airflow scheduler
+    volumes: *airflow-common-volumes
+
+volumes:
+  airflow-postgres:

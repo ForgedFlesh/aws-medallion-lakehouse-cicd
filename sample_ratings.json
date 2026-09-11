@@ -1,0 +1,20 @@
+[
+  {
+    "customerNumber": 101,
+    "productCode": "S10_001",
+    "productRating": 5,
+    "ratingTimestamp": "2026-09-09T10:15:00"
+  },
+  {
+    "customerNumber": 102,
+    "productCode": "S10_002",
+    "productRating": 4,
+    "ratingTimestamp": "2026-09-09T11:30:00"
+  },
+  {
+    "customerNumber": 103,
+    "productCode": "S20_001",
+    "productRating": 3,
+    "ratingTimestamp": "2026-09-09T14:45:00"
+  }
+]

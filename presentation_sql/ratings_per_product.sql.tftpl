@@ -1,0 +1,31 @@
+CREATE TABLE IF NOT EXISTS ${presentation_database_name}.ratings_per_product
+WITH (
+    table_type = 'ICEBERG',
+    location = 's3://${data_lake_bucket_name}/presentation_zone/ratings_per_product/',
+    is_external = false
+)
+AS
+SELECT
+    p.productCode,
+    p.productName,
+    count(r.productRating) AS rating_count,
+    avg(cast(r.productRating AS double)) AS average_rating
+FROM ${curated_database_name}.products p
+LEFT JOIN ${curated_database_name}.ratings_for_ml r
+  ON p.productCode = r.productCode
+WHERE 1 = 0
+GROUP BY 1, 2;
+
+DELETE FROM ${presentation_database_name}.ratings_per_product;
+
+INSERT INTO ${presentation_database_name}.ratings_per_product
+SELECT
+    p.productCode,
+    p.productName,
+    count(r.productRating) AS rating_count,
+    avg(cast(r.productRating AS double)) AS average_rating
+FROM ${curated_database_name}.products p
+LEFT JOIN ${curated_database_name}.ratings_for_ml r
+  ON p.productCode = r.productCode
+WHERE p.processing_date = (SELECT max(processing_date) FROM ${curated_database_name}.products)
+GROUP BY 1, 2;

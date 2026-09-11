@@ -1,0 +1,69 @@
+version: 2
+
+models:
+  - name: dim_customers
+    columns:
+      - name: customer_number
+        tests: [not_null, unique]
+      - name: credit_limit
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+  - name: dim_products
+    columns:
+      - name: product_code
+        tests: [not_null, unique]
+      - name: quantity_in_stock
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+  - name: fact_order_items
+    columns:
+      - name: order_item_id
+        tests: [not_null, unique]
+      - name: customer_number
+        tests:
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_number
+      - name: product_code
+        tests:
+          - relationships:
+              to: ref('dim_products')
+              field: product_code
+      - name: order_date_key
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: order_status
+        tests:
+          - accepted_values:
+              values: ['SHIPPED', 'RESOLVED', 'CANCELLED', 'ON HOLD', 'DISPUTED', 'IN PROCESS']
+      - name: quantity_ordered
+        tests: [not_null]
+      - name: gross_amount
+        tests: [not_null]
+
+  - name: fact_product_ratings
+    columns:
+      - name: rating_id
+        tests: [not_null, unique]
+      - name: customer_number
+        tests:
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_number
+      - name: product_code
+        tests:
+          - relationships:
+              to: ref('dim_products')
+              field: product_code
+      - name: product_rating
+        tests:
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5]
+                quote: false

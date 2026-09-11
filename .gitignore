@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Airflow runtime
+airflow/logs/
+airflow/.env
+
+# Terraform local/runtime files
+**/.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+*.auto.tfvars
+crash.log
+crash.*.log
+*.tfplan
+
+# dbt generated files
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/
+
+# IDE / OS
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Credentials / private keys
+*.pem
+*.key
+
+# Temporary files
+*.tmp
+*.log
+
+dbt/.user.yml
+airflow/notes
