@@ -1,3 +1,5 @@
+#variables that we are passing from the root main.tf module 'landing_etl'
+
 variable "project_name" { type = string }
 variable "scripts_bucket_name" { type = string }
 variable "glue_role_arn" { type = string }

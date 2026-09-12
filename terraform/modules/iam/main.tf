@@ -1,3 +1,6 @@
+#this itself is not any policy,it is just a document,when we create the actual policy we will pass itthis policy document
+#and the actions will be adapted by the policy
+#here this one is the trust policy,we are allowing glue to assume this role
 data "aws_iam_policy_document" "glue_assume" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -9,16 +12,19 @@ data "aws_iam_policy_document" "glue_assume" {
   }
 }
 
+#creating the glue role which will be assumed by our glue jobs attaching the trust policy 
 resource "aws_iam_role" "glue" {
   name               = "${var.project_name}-glue-role"
   assume_role_policy = data.aws_iam_policy_document.glue_assume.json
 }
 
+#we are attaching the basic glue inbuilt policies 
 resource "aws_iam_role_policy_attachment" "glue_service" {
   role       = aws_iam_role.glue.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
 }
 
+#this is again a document type
 data "aws_iam_policy_document" "glue_data" {
   statement {
     actions = [
@@ -67,11 +73,12 @@ data "aws_iam_policy_document" "glue_data" {
   }
 }
 
+#this is a real policy,that has the permissions we have declared in the document
 resource "aws_iam_policy" "glue_data" {
   name   = "${var.project_name}-glue-data-policy"
   policy = data.aws_iam_policy_document.glue_data.json
 }
-
+#attaching the above policy to the glue role
 resource "aws_iam_role_policy_attachment" "glue_data" {
   role       = aws_iam_role.glue.name
   policy_arn = aws_iam_policy.glue_data.arn

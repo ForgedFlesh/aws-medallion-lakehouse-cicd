@@ -1,15 +1,20 @@
+#my Common python file which contains helper functions like write_audit,fail_audit.Converting it into ZIP
 data "archive_file" "common" {
   type        = "zip"
   source_file = "${path.root}/assets/common/glue_utils.py"
   output_path = "${path.module}/glue_utils.zip"
 }
 
+#sending the above zip file in a s3 bucket,the script bucket.
 resource "aws_s3_object" "common" {
   bucket = var.scripts_bucket_name
   key    = "glue/common/glue_utils.zip"
   source = data.archive_file.common.output_path
   etag   = filemd5(data.archive_file.common.output_path)
 }
+
+#after my resources are up and running,this 
+#bootstrap_rds.py conects with the RDS using an existing Glue JDBC connection and write demo data..taht we will ingest later on
 resource "aws_s3_object" "bootstrap_rds" {
   bucket = var.scripts_bucket_name
   key    = "glue/landing/bootstrap_rds.py"
@@ -20,6 +25,7 @@ resource "aws_s3_object" "bootstrap_rds" {
   )
 }
 
+#that boostrap server file reads the sql insert statements from this s3 object.
 resource "aws_s3_object" "bootstrap_sql" {
   bucket = var.scripts_bucket_name
 
@@ -31,18 +37,27 @@ resource "aws_s3_object" "bootstrap_sql" {
     "${path.root}/assets/bootstrap/classicmodels_bootstrap.sql"
   )
 }
+
+#sending batch ingest glue script to the s3 scripts bucket
 resource "aws_s3_object" "batch_ingress" {
   bucket = var.scripts_bucket_name
   key    = "glue/landing/batch_ingress.py"
   source = "${path.root}/assets/landing_etl_jobs/batch_ingress.py"
   etag   = filemd5("${path.root}/assets/landing_etl_jobs/batch_ingress.py")
 }
+
+#sending json ingest glue script to the s3 scripts bucket,later json ingest glue job will read this script from the bucket
 resource "aws_s3_object" "json_ingress" {
   bucket = var.scripts_bucket_name
   key    = "glue/landing/json_ingress.py"
   source = "${path.root}/assets/landing_etl_jobs/json_ingress.py"
   etag   = filemd5("${path.root}/assets/landing_etl_jobs/json_ingress.py")
 }
+
+#create an AWS JDBC connection to connect to MYSQL,which is sitting inside a private subnet and 
+#glue uses ENI when we create this JDBC connection to actually connect to that rds server inside 
+#private subnet,taking in accoubt we have allowed the glue-sg traffic to enter 
+
 resource "aws_glue_connection" "rds" {
   name = "${var.project_name}-rds-connection"
   connection_properties = {
@@ -56,6 +71,8 @@ resource "aws_glue_connection" "rds" {
     subnet_id              = var.glue_subnet_id
   }
 }
+
+#local scripts arguments, we will be passing all these common arguments to the Glue Jobs we will be creating now.
 locals {
   common_args = {
     "--job-language"                 = "python"
@@ -69,6 +86,10 @@ locals {
     "--run_mode"                     = "incremental"
   }
 }
+
+
+#this is just a glue job resource that we create here,the actual glue job will later be initiated by GlueJobOperator in AIRFLOW
+#This glue jobs makes a connection with the RDS and then ingest .csv files in  my landing_zone/
 resource "aws_glue_job" "rds" {
   name              = "${var.project_name}-rds-ingestion-job"
   role_arn          = var.glue_role_arn
@@ -86,6 +107,8 @@ resource "aws_glue_job" "rds" {
     "--connection_name" = aws_glue_connection.rds.name
   })
 }
+
+#this will read the s3 object which is a json ratings file,and store it in my landing_zone/
 resource "aws_glue_job" "json" {
   name              = "${var.project_name}-json-ingestion-job"
   role_arn          = var.glue_role_arn
@@ -104,6 +127,7 @@ resource "aws_glue_job" "json" {
   })
 }
 
+#this is the glue job that we are going to need at the beginning to actually store demo data inside the RDS Mysql DB.
 resource "aws_glue_job" "bootstrap_rds" {
   name     = "${var.project_name}-bootstrap-rds-job"
   role_arn = var.glue_role_arn

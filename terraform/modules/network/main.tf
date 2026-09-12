@@ -1,3 +1,4 @@
+#Creating MY AWS VPC(Virtual Private Cloud) this is my own private network isolated from all other networks
 resource "aws_vpc" "this" {
   cidr_block = var.vpc_cidr
 
@@ -9,9 +10,9 @@ resource "aws_vpc" "this" {
   }
 }
 
-#we are creating 3 subnets 1 for rds and its rds subgroups,1 for glue ENI,and 1 for for redshift i guess
-
-
+#we are creating 3 private subnets,for our rds subnet group,glue ENI
+#we are passing three subnet cidrs through the variables
+#here the number of resource will be 3 because of the count
 resource "aws_subnet" "private" {
   count = length(var.private_subnet_cidrs)
 
@@ -60,6 +61,7 @@ resource "aws_vpc_endpoint" "s3" {
   }
 }
 
+#for network to reach out of our privare subnets,as there is no INERNET gateway we configured gateway(VPC endpoints)
 resource "aws_vpc_endpoint" "dynamodb" {
   vpc_id            = aws_vpc.this.id
   service_name      = "com.amazonaws.us-east-1.dynamodb"
