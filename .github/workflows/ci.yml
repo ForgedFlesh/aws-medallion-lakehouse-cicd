@@ -77,4 +77,4 @@ jobs:
         run: docker run --rm medallion-airflow-ci airflow version
 
       - name: Verify dbt installation
-        run: docker run --rm medallion-airflow-ci dbt --version
+        run: docker run --rm --entrypoint /opt/airflow/dbt-venv/bin/dbt medallion-airflow-ci --version
