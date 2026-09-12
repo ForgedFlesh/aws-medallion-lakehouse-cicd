@@ -1,0 +1,80 @@
+name: Medallion Lakehouse CI
+
+#we trigger this workflow on pull requests and pushes to the main branch. 
+#This ensures that any changes made to the main branch are automatically tested and validated, 
+#maintaining the integrity of the codebase.
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main  
+
+jobs:
+
+#this job checks out repository, sets up Python, installs dependencies, and runs automated tests using pytest.
+  python-validation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pytest
+        run: pip install pytest
+      #- Can all Python files be parsed?
+      - name: Check all tracked Python files
+        run: git ls-files -z '*.py' | xargs -0 python -m py_compile
+
+      #does my python logic work as expected?
+      - name: Run Python unit tests
+        run: pytest tests -v
+
+#this job checks out the repository, sets up Terraform, and performs format checks, initialization, and validation of Terraform configurations.
+  terraform-validation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: "1.16.0"
+
+      - name: Terraform format check
+        working-directory: terraform
+        run: terraform fmt -check -recursive
+
+      - name: Terraform init
+        working-directory: terraform
+        run: terraform init -backend=false
+
+      - name: Terraform validate
+        working-directory: terraform
+        run: terraform validate
+
+#this job checks out the repository, builds the Airflow Docker image, and verifies the installation of Airflow and dbt within the Docker container.
+  docker-validation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Build Airflow Docker image
+        run: docker build -t medallion-airflow-ci ./airflow
+
+      - name: Verify Airflow installation
+        run: docker run --rm medallion-airflow-ci airflow version
+
+      - name: Verify dbt installation
+        run: docker run --rm medallion-airflow-ci dbt --version
