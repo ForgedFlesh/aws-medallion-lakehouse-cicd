@@ -1,0 +1,81 @@
+#the steps below when we merge the code to main branch then this will deploy the code to dev environment
+#merge/push to main
+#→ get OIDC token
+#→ assume AWS IAM role
+#→ terraform init
+#→ terraform plan
+#→ terraform apply DEV
+
+name: Deploy DEV
+
+on:
+  push:
+    branches:
+      - main
+
+#feature branch
+      #↓
+#PR
+      #↓
+#CI passes
+      #↓
+#merge PR
+      #↓
+#main receives a push
+      #↓
+#deploy-dev.yml starts automatically
+
+permissions:
+  id-token: write
+  contents: read
+#GitHub, allow this running job to request its OIDC identity token.
+
+jobs:
+  deploy-dev:
+    runs-on: ubuntu-latest
+
+    env:
+      TF_VAR_rds_username: ${{ secrets.RDS_USERNAME }}
+      TF_VAR_rds_password: ${{ secrets.RDS_PASSWORD }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Authenticate to AWS using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::746780967442:role/github-medallion-dev-deploy-role
+          aws-region: us-east-1
+        #Conceptually it performs:
+
+        #GitHub runner
+         #↓
+        #asks GitHub for OIDC token
+         #↓
+        # gets signed token
+        #     ↓
+        # sends token to AWS STS
+        #     ↓
+        # asks:
+        # "Can I assume this IAM role?"
+        #     ↓
+        # AWS checks OIDC provider + trust policy
+        #     ↓
+        # AWS returns temporary credentials
+      - name: Terraform setup
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: "1.16.0"
+
+      - name: Terraform init
+        working-directory: terraform
+        run: terraform init -backend-config="key=dev/terraform.tfstate"
+
+      - name: Terraform plan DEV
+        working-directory: terraform
+        run: terraform plan -var-file="environments/dev.tfvars" -out=tfplan
+
+      - name: Terraform apply DEV
+        working-directory: terraform
+        run: terraform apply -auto-approve tfplan
