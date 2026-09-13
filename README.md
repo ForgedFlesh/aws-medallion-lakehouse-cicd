@@ -1,90 +1,180 @@
-# AWS Medallion Lakehouse
+# AWS Governed Medallion Lakehouse 🚀
 
-This repository is a reconstructed and enhanced version of the original
-`medallion-lakehouse-with-aws-lake-formation` project.
+> This project taught me what months of theory couldn't — how data actually flows between AWS services, how those services communicate securely, and how to make sure downstream consumers receive trustworthy data.
 
+An end-to-end AWS Data Engineering project built from the ground up — **networking, ingestion, transformation, governance, orchestration, Infrastructure as Code, testing and CI/CD**.
 
-## Important architecture distinction
+The idea behind the pipeline is simple:
 
-S3 and Iceberg are the persistent lakehouse storage. Redshift Spectrum reads the
-curated external tables from S3 through the Glue Data Catalog. dbt then creates
-analytics-ready fact and dimension tables inside Redshift, which becomes the
-serving warehouse for BI and downstream SQL consumers.
+> **No data is better than corrupted data.**
 
-## High-level flow
+---
 
-```mermaid
-flowchart LR
-    RDS[(MySQL / RDS)] --> G1[Glue RDS ingestion]
-    API[Ratings JSON in source S3] --> G2[Glue JSON ingestion]
-    G1 --> LAND[S3 landing zone]
-    G2 --> LAND
-    LAND --> GT[Glue validation and PySpark transforms]
-    GT --> REJ[S3 rejected zone]
-    GT --> CUR[S3 curated Parquet and Iceberg]
-    GT --> AUD[(DynamoDB pipeline audit)]
-    CUR --> CAT[Glue Data Catalog]
-    CAT --> LF[Lake Formation permissions]
-    CAT --> ATH[Athena presentation queries]
-    CAT --> SPEC[Redshift Spectrum external schema]
-    SPEC --> DBT[dbt staging and dimensional models]
-    DBT --> RS[(Redshift internal marts)]
-    AF[Dockerized Airflow] --> G1
-    AF --> G2
-    AF --> GT
-    AF --> DBT
-```
-
-## Data model
-
-The source domain is the Classic Models sales database plus product ratings.
-The main dbt serving models are:
-
-- `dim_customers`
-- `dim_products`
-- `dim_date`
-- `fact_order_items`
-- `fact_product_ratings`
-- `mart_monthly_sales`
-- `mart_product_performance`
-
-A **fact table** stores measurable business events such as order lines or
-ratings. A **dimension table** stores descriptive context such as customer,
-product, or date attributes.
-
-## Repository layout
+## Architecture
 
 ```text
-.
-|-- airflow/                  Docker image, dependencies and DAG
-|-- dbt/                      Spectrum sources and Redshift star schema
-|-- docs/                     Folder revision guide and interview Q&A
-|-- presentation_sql/         Athena Iceberg presentation tables
-|-- scripts/                  Manual runner and Redshift bootstrap utilities
-|-- terraform/                AWS infrastructure and Glue job code
-|-- docker-compose.yml        Local Airflow runtime
-`-- Makefile                  Common commands
+RDS MySQL + Ratings JSON (S3)
+              ↓
+        AWS Glue Ingestion
+              ↓
+          Landing Zone
+              ↓
+      Glue Transformation
+              ↓
+     Validation / Casting
+        ↙           ↘
+ Rejected Data    Curated Data
+                   │
+          Parquet + Iceberg
+                   ↓
+          Glue Data Catalog
+                   ↓
+          Lake Formation
+           Governance Layer
+                   ↓
+               Athena
+                   ↓
+         Presentation Zone
+                   ↓
+             dbt-athena
+                   ↓
+       Dimensional / BI Models
 ```
 
+**Apache Airflow** orchestrates the complete pipeline, while **DynamoDB** maintains pipeline audit information, statuses and record counts.
 
+---
 
-## Deployment order
+## What the Pipeline Does
 
-1. Copy `terraform/terraform.tfvars.example` to `terraform/terraform.tfvars`.
-2. Set globally unique bucket names and source/network values.
-3. Run `terraform init`, `terraform plan`, and `terraform apply`.
-4. Run `python scripts/bootstrap_redshift.py` when Redshift is enabled.
-5. Copy `airflow/.env.example` to `airflow/.env`.
-6. Start Airflow with `docker compose up airflow-init` and then
-   `docker compose up -d`.
-7. Set `ENABLE_REDSHIFT=true` in `airflow/.env` only after Redshift and the
-   Spectrum external schema are ready; otherwise the DAG safely skips dbt.
-8. Trigger the `medallion_lakehouse` DAG with a processing date.
-9. After the runtime-created `presentation_zone.ratings_for_ml` table exists,
-   optionally set `enable_downstream_access=true` and apply again.
+- Ingests **8 tables from RDS MySQL** running inside private subnets.
+- Ingests changing customer-rating JSON files from S3.
+- Enforces schemas, casts datatypes and validates incoming records.
+- Separates **valid and rejected data** instead of allowing corrupted records downstream.
+- Stores stable relational data as **Snappy Parquet**.
+- Uses **Apache Iceberg** for changing datasets and incremental processing.
+- Registers metadata in the **AWS Glue Data Catalog**.
+- Runs curated-layer **data-quality checks** before publishing data.
+- Uses **Athena Engine v3** for serverless querying.
+- Builds presentation-layer and dimensional models using **dbt-athena**.
+- Tracks pipeline execution and audit information in **DynamoDB**.
 
-## Cost warning
+---
 
-Redshift Serverless, Glue jobs, Athena queries and NAT/network components can
-create AWS charges. Redshift is disabled by default in Terraform. Review the
-plan and enable only the resources you intend to run.
+## Governance & Security
+
+The data lake is governed using **AWS Lake Formation**.
+
+IAM controls whether an identity can call AWS services, while Lake Formation provides fine-grained permissions over governed databases, tables and data locations.
+
+This allows permissions such as:
+
+```text
+SELECT
+DESCRIBE
+DATA_LOCATION_ACCESS
+```
+
+to be granted only to the required downstream identities.
+
+---
+
+## Infrastructure & Orchestration
+
+The complete AWS infrastructure is managed using **Terraform**, including:
+
+```text
+VPC / Private Subnets / Security Groups
+RDS
+S3
+Glue
+DynamoDB
+IAM
+Lake Formation
+Athena
+```
+
+Airflow currently runs through Docker and orchestrates:
+
+```text
+RDS + JSON Ingestion
+        ↓
+Transformation
+        ↓
+Iceberg MERGE
+        ↓
+Data Quality
+        ↓
+Athena Presentation
+        ↓
+dbt Build
+```
+
+---
+
+## DEV / PROD & CI/CD
+
+The same Terraform code is reused with isolated environment configuration:
+
+```text
+dev.tfvars  → DEV resources
+prod.tfvars → PROD resources
+```
+
+Terraform state is stored remotely in S3 with separate DEV and PROD state.
+
+GitHub Actions provides CI/CD:
+
+```text
+Feature Branch
+      ↓
+Pull Request
+      ↓
+Python + Terraform + Docker CI
+      ↓
+Protected Main Branch
+      ↓
+Merge
+      ↓
+GitHub Actions DEV Deployment
+      ↓
+OIDC → AWS IAM Role
+      ↓
+Terraform Plan + Apply
+      ↓
+DEV Environment
+```
+
+GitHub authenticates to AWS using **OIDC and temporary STS credentials**, so long-lived AWS access keys are not stored in the repository.
+
+The next promotion stage is:
+
+```text
+DEV Smoke / Integration Tests
+            ↓
+      Manual Approval
+            ↓
+       PROD Deployment
+```
+
+---
+
+## Tech Stack
+
+**AWS:** S3, RDS MySQL, Glue, Athena, Lake Formation, DynamoDB, IAM, VPC  
+**Data:** Parquet, Apache Iceberg  
+**Processing:** Python, PySpark, SQL  
+**Analytics:** dbt-athena  
+**Orchestration:** Apache Airflow  
+**Infrastructure:** Terraform  
+**Containers:** Docker  
+**Testing:** pytest, dbt tests, Terraform validation  
+**CI/CD:** GitHub Actions + GitHub OIDC
+
+---
+
+## Goal
+
+This project is not only about moving data from one place to another.
+
+It demonstrates how to build a pipeline where **bad data is isolated, good data is governed, processing is auditable, infrastructure is reproducible and deployments are automated**.
