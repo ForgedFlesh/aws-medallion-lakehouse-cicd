@@ -1,0 +1,52 @@
+aws_region   = "us-east-1"
+project_name = "medallion-lakehouse"
+environment  = "dev"
+
+vpc_cidr = "10.0.0.0/16"
+
+private_subnet_cidrs = [
+  "10.0.1.0/24",
+  "10.0.2.0/24",
+  "10.0.3.0/24"
+]
+
+availability_zones = [
+  "us-east-1a",
+  "us-east-1b",
+  "us-east-1c"
+]
+
+data_lake_bucket_name   = "gamebred6296599796-datalake"
+scripts_bucket_name     = "gamebred6296599796-scripts"
+source_data_bucket_name = "gamebred6296599796-source-ratings"
+
+ratings_source_prefix = "ratings/"
+
+rds_database_name = "classicmodels"
+rds_username      = "admin"
+rds_password      = "JohnCena17!"
+
+rds_instance_class    = "db.t3.micro"
+rds_allocated_storage = 20
+
+curated_database_name      = "curated_zone"
+presentation_database_name = "presentation_zone"
+
+athena_workgroup_name = "medallion-lakehouse-workgroup"
+
+enable_redshift = false
+
+redshift_namespace_name = "medallion-lakehouse"
+redshift_workgroup_name = "medallion-lakehouse"
+redshift_database_name  = "lakehouse"
+redshift_base_capacity  = 4
+
+enable_downstream_access = false
+enable_event_trigger     = false
+redshift_allowed_cidr    = "49.37.123.45/32"
+
+redshift_public_subnet_cidrs = [
+  "10.0.11.0/24",
+  "10.0.12.0/24",
+  "10.0.13.0/24"
+]
