@@ -11,7 +11,13 @@ variable "project_name" {
 variable "environment" {
   type    = string
   default = "dev"
+
+  validation {
+    condition     = contains(["dev", "prod"], var.environment)
+    error_message = "environment must be either dev or prod."
+  }
 }
+
 
 variable "vpc_cidr" {
   type    = string
@@ -153,4 +159,5 @@ variable "redshift_public_subnet_cidrs" {
 variable "redshift_allowed_cidr" {
   type        = string
   description = "Public IPv4 CIDR allowed to connect to Redshift"
+  default     = null
 }
