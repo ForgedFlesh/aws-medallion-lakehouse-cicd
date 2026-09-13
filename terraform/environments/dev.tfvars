@@ -34,7 +34,7 @@ athena_workgroup_name = "medallion-lakehouse-dev-workgroup"
 
 ml_user_name = "ml_data_lake_user_dev"
 
-enable_redshift         = false
+enable_redshift          = false
 enable_downstream_access = false
 enable_event_trigger     = false
 

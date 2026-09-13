@@ -1,6 +1,6 @@
 locals {
 
-  resource_prefix= "${var.project_name}-${var.environment}"
+  resource_prefix          = "${var.project_name}-${var.environment}"
   effective_lakehouse_path = var.lakehouse_path != "" ? var.lakehouse_path : "s3://${var.data_lake_bucket_name}/curated_zone"
 }
 
@@ -89,8 +89,8 @@ module "lakeformation" {
 }
 
 module "transform_etl" {
-  source       = "./modules/transform_etl"
-  project_name = local.resource_prefix
+  source                = "./modules/transform_etl"
+  project_name          = local.resource_prefix
   scripts_bucket_name   = module.storage.scripts_bucket_name
   glue_role_arn         = module.iam.glue_role_arn
   data_lake_bucket_name = module.storage.data_lake_bucket_name
@@ -101,8 +101,8 @@ module "transform_etl" {
 }
 
 module "presentation" {
-  source       = "./modules/presentation"
-  project_name = local.resource_prefix
+  source                     = "./modules/presentation"
+  project_name               = local.resource_prefix
   data_lake_bucket_name      = var.data_lake_bucket_name
   curated_database_name      = var.curated_database_name
   scripts_bucket_name        = module.storage.scripts_bucket_name
@@ -142,9 +142,9 @@ module "downstream_access" {
 }
 
 module "event_trigger" {
-  count        = var.enable_event_trigger ? 1 : 0
-  source       = "./modules/event_trigger"
-  project_name = local.resource_prefix
+  count                   = var.enable_event_trigger ? 1 : 0
+  source                  = "./modules/event_trigger"
+  project_name            = local.resource_prefix
   source_bucket_name      = var.source_data_bucket_name
   source_prefix           = var.ratings_source_prefix
   json_ingestion_job_name = module.landing_etl.json_ingestion_job_name
