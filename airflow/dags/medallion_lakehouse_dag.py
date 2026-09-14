@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from datetime import datetime, timedelta
+import json
 
 import boto3
 import pendulum
@@ -58,31 +59,23 @@ ATHENA_WORKGROUP = os.getenv(
 # =========================================================
 # AWS GLUE JOB NAMES
 # =========================================================
-
-JOB_RDS_INGESTION = (
-    "medallion-lakehouse-rds-ingestion-job"
+PROJECT_NAME = os.getenv(
+    "PROJECT_NAME",
+    "medallion-lakehouse-dev",
 )
 
-JOB_JSON_INGESTION = (
-    "medallion-lakehouse-json-ingestion-job"
-)
 
-JOB_BATCH_TRANSFORM = (
-    "medallion-lakehouse-batch-transform-job"
-)
+JOB_RDS_INGESTION = f"{PROJECT_NAME}-rds-ingestion-job"
 
-JOB_ML_TRANSFORM = (
-    "medallion-lakehouse-ml-transform-job"
-)
+JOB_JSON_INGESTION = f"{PROJECT_NAME}-json-ingestion-job"
 
-JOB_RATINGS_ICEBERG = (
-    "medallion-lakehouse-ratings-iceberg-job"
-)
+JOB_BATCH_TRANSFORM = f"{PROJECT_NAME}-batch-transform-job"
 
-JOB_QUALITY = (
-    "medallion-lakehouse-curated-quality-job"
-)
+JOB_ML_TRANSFORM = f"{PROJECT_NAME}-ml-transform-job"
 
+JOB_RATINGS_ICEBERG = f"{PROJECT_NAME}-ratings-iceberg-job"
+
+JOB_QUALITY = f"{PROJECT_NAME}-curated-quality-job"
 
 # =========================================================
 # PROCESSING DATE
@@ -194,7 +187,7 @@ with DAG(
 
     # Every day at 02:00 AM IST.
     # Processes previous calendar day.
-    schedule="0 2 * * *",
+    schedule=None,
 
     catchup=False,
 
