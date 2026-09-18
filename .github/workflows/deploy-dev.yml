@@ -9,9 +9,8 @@
 name: Deploy DEV
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+  
 
 #feature branch
       #↓

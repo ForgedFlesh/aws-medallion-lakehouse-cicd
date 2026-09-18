@@ -38,3 +38,7 @@ Thumbs.db
 
 dbt/.user.yml
 airflow/notes
+
+PROJECT_TREES.md
+Makefile
+README.md
